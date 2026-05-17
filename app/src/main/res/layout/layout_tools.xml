@@ -3,15 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:background="@color/colorPrimary"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:padding="8dp">
 
     <LinearLayout
         android:id="@+id/repost"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
         android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/share"
         app:layout_constraintHorizontal_bias="0.5"
@@ -19,14 +19,15 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
+            android:id="@+id/img_repost"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:padding="3dp"
-            android:src="@drawable/ic_share"
+            android:src="@drawable/ic_repost"
             app:tint="@color/white" />
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Repost"
@@ -36,9 +37,10 @@
 
     <LinearLayout
         android:id="@+id/share"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="@+id/repost"
         app:layout_constraintEnd_toStartOf="@+id/download"
         app:layout_constraintHorizontal_bias="0.5"
@@ -46,14 +48,15 @@
         app:layout_constraintTop_toTopOf="@+id/repost">
 
         <ImageView
+            android:id="@+id/img_share"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:padding="3dp"
-            android:src="@drawable/ic_repost"
+            android:src="@drawable/ic_share"
             app:tint="@color/white" />
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Share"
@@ -63,9 +66,10 @@
 
     <LinearLayout
         android:id="@+id/download"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="@+id/repost"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -81,7 +85,7 @@
             app:tint="@color/white" />
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Save"

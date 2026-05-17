@@ -27,6 +27,8 @@ class MediaAdapter(val list: ArrayList<MediaModel>, val context: Context) :
                     .into(statusImage)
                 if (mediaModel.type == MEDIA_TYPE_IMAGE) {
                     statusPlay.visibility = View.GONE
+                } else {
+                    statusPlay.visibility = View.VISIBLE
                 }
 
                 cardStatus.setOnClickListener {

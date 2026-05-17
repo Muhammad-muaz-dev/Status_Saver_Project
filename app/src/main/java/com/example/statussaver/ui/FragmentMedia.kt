@@ -1,5 +1,6 @@
 package com.example.statussaver.ui
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -15,8 +16,19 @@ import com.example.statussaver.viewmodels.StatusViewModel
 import com.example.statussaver.viewmodels.factories.StatusViewModelFactory
 
 class FragmentMedia : Fragment() {
+    private var mActivity: Context?=null
     private val binding by lazy {
         FragmentMediaBinding.inflate(layoutInflater)
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        mActivity=context
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        mActivity=null
     }
     lateinit var viewModel: StatusViewModel
     lateinit var adapter: MediaAdapter
@@ -149,6 +161,11 @@ class FragmentMedia : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ) = binding.root
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mActivity=null
+    }
 
 
 }
