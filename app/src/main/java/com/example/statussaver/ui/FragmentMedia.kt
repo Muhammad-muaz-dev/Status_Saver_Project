@@ -111,6 +111,32 @@ class FragmentMedia : Fragment() {
                             }
                         }
                     }
+
+                    Constants.MEDIA_TYPE_SAVED_IMAGES -> {
+                        viewModel.getSavedMedia()
+                        viewModel.savedImagesLiveData.observe(requireActivity()) { list ->
+                            adapter = MediaAdapter(list, requireActivity())
+                            mediaRecyclerView.adapter = adapter
+                            if (list.size == 0) {
+                                tempMediaText.visibility = View.VISIBLE
+                            } else {
+                                tempMediaText.visibility = View.GONE
+                            }
+                        }
+                    }
+
+                    Constants.MEDIA_TYPE_SAVED_VIDEOS -> {
+                        viewModel.getSavedMedia()
+                        viewModel.savedVideosLiveData.observe(requireActivity()) { list ->
+                            adapter = MediaAdapter(list, requireActivity())
+                            mediaRecyclerView.adapter = adapter
+                            if (list.size == 0) {
+                                tempMediaText.visibility = View.VISIBLE
+                            } else {
+                                tempMediaText.visibility = View.GONE
+                            }
+                        }
+                    }
                 }
 
 

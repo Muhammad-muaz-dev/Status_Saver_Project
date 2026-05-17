@@ -83,15 +83,26 @@ class FragmentStatus : Fragment() {
         } else {
             binding.permissionLayoutHolder.visibility = View.VISIBLE
             binding.permissionLayout.btnPermission.setOnClickListener {
-                getFolderPermissions(
-                    requireContext(),
-                    whatsappRequestCode,
-                    Constants.getWhatsappUri()
-                )
+                if (!isAppInstalled(Constants.TYPE_WHATSAPP_MAIN, requireContext())) {
+                    Toast.makeText(
+                        requireContext(),
+                        "WhatsApp not found. Please select any directory.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    getFolderPermissions(
+                        requireContext(),
+                        whatsappRequestCode,
+                        Constants.getWhatsappUri()
+                    )
+                } else {
+                    getFolderPermissions(
+                        requireContext(),
+                        whatsappRequestCode,
+                        Constants.getWhatsappUri()
+                    )
+                }
             }
-
         }
-
         setupViewPager()
     }
 
@@ -105,15 +116,26 @@ class FragmentStatus : Fragment() {
         } else {
             binding.permissionLayoutHolder.visibility = View.VISIBLE
             binding.permissionLayout.btnPermission.setOnClickListener {
-                getFolderPermissions(
-                    requireContext(),
-                    whatsappBusinessRequestCode,
-                    Constants.getWhatsappBusinessUri()
-                )
+                if (!isAppInstalled(Constants.TYPE_WHATSAPP_BUSINESS, requireContext())) {
+                    Toast.makeText(
+                        requireContext(),
+                        "WhatsApp Business not found. Please select any directory.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    getFolderPermissions(
+                        requireContext(),
+                        whatsappBusinessRequestCode,
+                        Constants.getWhatsappBusinessUri()
+                    )
+                } else {
+                    getFolderPermissions(
+                        requireContext(),
+                        whatsappBusinessRequestCode,
+                        Constants.getWhatsappBusinessUri()
+                    )
+                }
             }
-
         }
-
         setupViewPager(isBusiness = true)
     }
 

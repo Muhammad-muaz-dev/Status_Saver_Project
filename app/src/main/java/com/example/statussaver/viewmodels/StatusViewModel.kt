@@ -30,6 +30,10 @@ class StatusViewModel(val repo: StatusRepo) : ViewModel() {
     val whatsAppBusinessImagesLiveData = MutableLiveData<ArrayList<MediaModel>>()
     val whatsAppBusinessVideosLiveData = MutableLiveData<ArrayList<MediaModel>>()
 
+    // saved
+    val savedImagesLiveData = MutableLiveData<ArrayList<MediaModel>>()
+    val savedVideosLiveData = MutableLiveData<ArrayList<MediaModel>>()
+
     private var isPermissionsGranted = false
 
     init {
@@ -125,7 +129,49 @@ class StatusViewModel(val repo: StatusRepo) : ViewModel() {
         }
     }
 
+    fun getSavedMedia() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val savedImages = ArrayList<MediaModel>()
+            val savedVideos = ArrayList<MediaModel>()
 
+            val downloadsDir = java.io.File(
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
+                repo.context.getString(com.example.statussaver.R.string.app_name)
+            )
+
+            if (downloadsDir.exists()) {
+                val files = downloadsDir.listFiles()
+                files?.forEach { file ->
+                    if (file.isFile && file.name != ".nomedia") {
+                        val extension = com.example.statussaver.utils.getFileExtension(file.name)
+                        val fileType = when (extension.lowercase()) {
+                            "jpg", "jpeg", "png", "gif" -> MEDIA_TYPE_IMAGE
+                            "mp4", "avi", "mkv" -> MEDIA_TYPE_VIDEO
+                            else -> null
+                        }
+
+                        val model = MediaModel(
+                            pathUri = android.net.Uri.fromFile(file).toString(),
+                            fileName = file.name,
+                            type = fileType ?: MEDIA_TYPE_IMAGE,
+                            isDownloaded = true
+                        )
+
+                        if (fileType == MEDIA_TYPE_IMAGE) {
+                            savedImages.add(model)
+                        } else if (fileType == MEDIA_TYPE_VIDEO) {
+                            savedVideos.add(model)
+                        }
+                    }
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                savedImagesLiveData.postValue(savedImages)
+                savedVideosLiveData.postValue(savedVideos)
+            }
+        }
+    }
 }
 
 

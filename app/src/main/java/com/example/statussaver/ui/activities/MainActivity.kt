@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.statussaver.R
 import com.example.statussaver.databinding.ActivityMainBinding
+import com.example.statussaver.ui.FragmentSaveStatus
 import com.example.statussaver.ui.FragmentSettings
 import com.example.statussaver.ui.FragmentStatus
 import com.example.statussaver.utils.Constants
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         Thread.sleep(1000)
         checkStoragePermissions()
-        hideSystemBars()
+
         setContentView(binding.root)
         SharedPrefUtils.init(activity)
         binding.apply {
@@ -60,6 +61,9 @@ class MainActivity : AppCompatActivity() {
                             Constants.TYPE_WHATSAPP_BUSINESS
                         )
                         replaceFragment(fragmentWhatsAppStatus, bundle)
+                    }
+                    R.id.nav_saved_files ->{
+                        replaceFragment(FragmentSaveStatus())
                     }
 
                     R.id.menu_settings -> {

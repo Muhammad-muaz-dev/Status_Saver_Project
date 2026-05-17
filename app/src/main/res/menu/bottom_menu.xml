@@ -12,6 +12,11 @@
         android:id="@+id/menu_business_status"
         android:icon="@drawable/ic_menu_wp_status"
         app:showAsAction="ifRoom"/>
+    <item android:id="@+id/nav_saved_files"
+        android:title="Saved"
+        android:icon="@drawable/ic_svg"
+        android:iconTint="@color/white"
+        app:showAsAction="ifRoom"/>
     <item
         android:title="Settings"
         android:id="@+id/menu_settings"
