@@ -166,6 +166,4 @@ class FragmentMedia : Fragment() {
         super.onDestroy()
         mActivity=null
     }
-
-
 }

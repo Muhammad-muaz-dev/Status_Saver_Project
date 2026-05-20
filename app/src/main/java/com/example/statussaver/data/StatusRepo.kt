@@ -1,5 +1,6 @@
 package com.example.statussaver.data
 
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -16,11 +17,10 @@ import com.example.statussaver.utils.SharedPrefUtils
 import com.example.statussaver.utils.getFileExtension
 import com.example.statussaver.utils.isStatusExist
 
-
 class StatusRepo(val context: Context) {
 
-    val whatsAppStatusesLiveData = MutableLiveData<ArrayList<MediaModel>>()
-    val whatsAppBusinessStatusesLiveData = MutableLiveData<ArrayList<MediaModel>>()
+     val whatsAppStatusesLiveData = MutableLiveData<ArrayList<MediaModel>>()
+     val whatsAppBusinessStatusesLiveData = MutableLiveData<ArrayList<MediaModel>>()
 
     val activity = context as Activity
 
@@ -30,17 +30,19 @@ class StatusRepo(val context: Context) {
     private val TAG = "StatusRepo"
 
     fun getAllStatuses(whatsAppType: String = Constants.TYPE_WHATSAPP_MAIN) {
-        val treeUri = when (whatsAppType) {
+        val treeUriString = when (whatsAppType) {
             Constants.TYPE_WHATSAPP_MAIN -> {
-                SharedPrefUtils.getPrefString(SharedPrefKeys.PREF_KEY_WP_TREE_URI, "")?.toUri()
+                SharedPrefUtils.getPrefString(SharedPrefKeys.PREF_KEY_WP_TREE_URI, "")
             }
 
             else -> {
                 SharedPrefUtils.getPrefString(SharedPrefKeys.PREF_KEY_WP_BUSINESS_TREE_URI, "")
-                    ?.toUri()
             }
-        } ?: return
-
+        }
+        
+        if (treeUriString.isNullOrEmpty()) return
+        
+        val treeUri = treeUriString.toUri()
         Log.d(TAG, "getAllStatuses: $treeUri")
 
         activity.contentResolver.takePersistableUriPermission(
@@ -48,65 +50,88 @@ class StatusRepo(val context: Context) {
             Intent.FLAG_GRANT_READ_URI_PERMISSION
         )
 
-        val rootFolder = DocumentFile.fromTreeUri(activity, treeUri)
-        
+        val fileDocument = DocumentFile.fromTreeUri(activity, treeUri)
+
         if (whatsAppType == Constants.TYPE_WHATSAPP_MAIN) {
             wpStatusesList.clear()
         } else {
             wpBusinessStatusesList.clear()
         }
 
-        rootFolder?.let {
-            val foldersToScan = mutableListOf<DocumentFile>()
+        fileDocument?.let { treeRoot ->
+            Log.d(TAG, "getAllStatuses: treeRoot name: ${treeRoot.name}, uri: ${treeRoot.uri}")
             
-            // Check the root folder itself
-            foldersToScan.add(it)
-
-            // Look for the hidden .Statuses folder
-            it.findFile(".Statuses")?.let { statusFolder ->
-                foldersToScan.add(statusFolder)
+            // If the user selected a parent folder (like 'Media' or 'WhatsApp'), try to find the '.Statuses' subfolder
+            // We check common names and also look for them in the current folder or one level down
+            var statusesFolder: DocumentFile? = null
+            
+            val rootName = treeRoot.name?.lowercase() ?: ""
+            if (rootName == ".statuses" || rootName == "statuses") {
+                statusesFolder = treeRoot
+            } else {
+                // Look for .Statuses in current folder
+                statusesFolder = treeRoot.findFile(".Statuses") ?: treeRoot.findFile("Statuses")
+                
+                // If still not found, and we are in 'WhatsApp', look in 'Media/.Statuses'
+                if (statusesFolder == null && (rootName == "whatsapp" || rootName == "whatsapp business")) {
+                    val media = treeRoot.findFile("Media")
+                    statusesFolder = media?.findFile(".Statuses") ?: media?.findFile("Statuses")
+                }
             }
             
-            // Also optionally scan standard media folders
-            it.findFile("WhatsApp Images")?.let { foldersToScan.add(it) }
-            it.findFile("WhatsApp Video")?.let { foldersToScan.add(it) }
-            it.findFile("WhatsApp Business Images")?.let { foldersToScan.add(it) }
-            it.findFile("WhatsApp Business Video")?.let { foldersToScan.add(it) }
+            // Fallback to treeRoot if no .Statuses folder found
+            val finalFolder = statusesFolder ?: treeRoot
+            Log.d(TAG, "getAllStatuses: Using folder: ${finalFolder.name}")
 
-            foldersToScan.forEach { folder ->
-                folder.listFiles().forEach { file ->
-                    if (file.name != ".nomedia" && file.isFile) {
-                        val extension = getFileExtension(file.name!!).lowercase()
-                        val type = when (extension) {
-                            "mp4", "mkv", "avi" -> MEDIA_TYPE_VIDEO
-                            "jpg", "jpeg", "png" -> MEDIA_TYPE_IMAGE
-                            else -> null
-                        }
+            finalFolder.listFiles().forEach { file ->
+                if (file.name != null && file.name != ".nomedia" && file.isFile) {
+                    val isDownloaded = context.isStatusExist(file.name!!)
+                    val extension = getFileExtension(file.name!!).lowercase()
+                    
+                    val type = if (extension == "mp4" || extension == "webm" || extension == "mkv" || extension == "avi" || extension == "3gp" || extension == "mov") {
+                        MEDIA_TYPE_VIDEO
+                    } else if (extension == "jpg" || extension == "jpeg" || extension == "png" || extension == "gif" || extension == "webp") {
+                        MEDIA_TYPE_IMAGE
+                    } else {
+                        // Default to image if unknown extension, many images have no extension in some versions
+                        // or have names like "status_12345"
+                        MEDIA_TYPE_IMAGE
+                    }
 
-                        if (type != null) {
-                            val model = MediaModel(
-                                pathUri = file.uri.toString(),
-                                fileName = file.name!!,
-                                type = type,
-                                isDownloaded = context.isStatusExist(file.name!!)
-                            )
-                            if (whatsAppType == Constants.TYPE_WHATSAPP_MAIN) {
-                                wpStatusesList.add(model)
-                            } else {
-                                wpBusinessStatusesList.add(model)
-                            }
-                        }
+                    val model = MediaModel(
+                        pathUri = file.uri.toString(),
+                        fileName = file.name!!,
+                        type = type,
+                        isDownloaded = isDownloaded
+                    )
+                    
+                    if (whatsAppType == Constants.TYPE_WHATSAPP_MAIN) {
+                        wpStatusesList.add(model)
+                    } else {
+                        wpBusinessStatusesList.add(model)
                     }
                 }
             }
+            
+            // If we still have nothing and we were in 'Media', maybe we should scan other folders?
+            // But usually .Statuses is enough.
+            when (whatsAppType) {
+                Constants.TYPE_WHATSAPP_MAIN -> {
+                    Log.d(TAG, "getAllStatuses: Pushing Value to Wp live Data")
+                    whatsAppStatusesLiveData.postValue(wpStatusesList)
+                }
 
-            if (whatsAppType == Constants.TYPE_WHATSAPP_MAIN) {
-                Log.d(TAG, "getAllStatuses: Pushing Value to Wp live Data, count: ${wpStatusesList.size}")
-                whatsAppStatusesLiveData.postValue(wpStatusesList)
-            } else {
-                Log.d(TAG, "getAllStatuses: Pushing Value to Wp Business live Data, count: ${wpBusinessStatusesList.size}")
-                whatsAppBusinessStatusesLiveData.postValue(wpBusinessStatusesList)
+                else -> {
+                    Log.d(TAG, "getAllStatuses: Pushing Value to Wp Business live Data")
+                    whatsAppBusinessStatusesLiveData.postValue(wpBusinessStatusesList)
+                }
+
             }
+
         }
+
+
     }
+
+
 }
