@@ -39,6 +39,7 @@ class FragmentStatus : Fragment() {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         Log.d(TAG, "→ directoryPickerLauncher callback received. Uri: $uri")
+        Log.d(TAG, "→ currentAppType: $currentAppType")
 
         if (uri != null) {
             handleDirectorySelection(uri)
@@ -92,6 +93,7 @@ class FragmentStatus : Fragment() {
         val isPermissionGranted = SharedPrefUtils.getPrefBoolean(
             SharedPrefKeys.PREF_KEY_WP_PERMISSION_GRANTED, false
         )
+        Log.d(TAG, "setupWhatsAppUI: Permission granted = $isPermissionGranted")
 
         if (isPermissionGranted) {
             getWhatsAppStatuses()
@@ -105,6 +107,7 @@ class FragmentStatus : Fragment() {
         val isPermissionGranted = SharedPrefUtils.getPrefBoolean(
             SharedPrefKeys.PREF_KEY_WP_BUSINESS_PERMISSION_GRANTED, false
         )
+        Log.d(TAG, "setupWhatsAppBusinessUI: Permission granted = $isPermissionGranted")
 
         if (isPermissionGranted) {
             getWhatsAppBusinessStatuses()
@@ -123,15 +126,22 @@ class FragmentStatus : Fragment() {
 
     private fun openDirectoryPicker(appType: String) {
         currentAppType = appType
+        Log.d(TAG, "openDirectoryPicker: Setting currentAppType to $currentAppType")
 
         val initialUri = when (appType) {
-            Constants.TYPE_WHATSAPP_MAIN -> Constants.getWhatsappUri()
-            Constants.TYPE_WHATSAPP_BUSINESS -> Constants.getWhatsappBusinessUri()
+            Constants.TYPE_WHATSAPP_MAIN -> {
+                Log.d(TAG, "openDirectoryPicker: Using WhatsApp main URI")
+                Constants.getWhatsappUri()
+            }
+            Constants.TYPE_WHATSAPP_BUSINESS -> {
+                Log.d(TAG, "openDirectoryPicker: Using WhatsApp Business URI")
+                Constants.getWhatsappBusinessUri()
+            }
             else -> null
         }
 
         Log.d(TAG, "Launching directory picker with hint: $initialUri")
-        
+
         Toast.makeText(
             requireContext(),
             "Please click 'USE THIS FOLDER' to allow access to WhatsApp statuses",
@@ -139,8 +149,6 @@ class FragmentStatus : Fragment() {
         ).show()
 
         try {
-            // Using the /document/ URI directly as a hint often works best 
-            // for ACTION_OPEN_DOCUMENT_TREE on Android 11+
             directoryPickerLauncher.launch(initialUri)
         } catch (e: Exception) {
             Log.e(TAG, "Error launching directory picker: ${e.message}")
@@ -155,7 +163,9 @@ class FragmentStatus : Fragment() {
     private fun handleDirectorySelection(uri: Uri) {
         try {
             val resolver = requireActivity().contentResolver
-            
+
+            Log.d(TAG, "handleDirectorySelection: uri=$uri, currentAppType=$currentAppType")
+
             // Take persistable URI permission
             resolver.takePersistableUriPermission(
                 uri,
@@ -164,26 +174,54 @@ class FragmentStatus : Fragment() {
 
             when (currentAppType) {
                 Constants.TYPE_WHATSAPP_MAIN -> {
-                    SharedPrefUtils.putPrefString(SharedPrefKeys.PREF_KEY_WP_TREE_URI, uri.toString())
+                    Log.d(TAG, "handleDirectorySelection: Saving WhatsApp URI")
+                    val savedUri = uri.toString()
+                    Log.d(TAG, "handleDirectorySelection: Saved WhatsApp URI = $savedUri")
+
+                    SharedPrefUtils.putPrefString(SharedPrefKeys.PREF_KEY_WP_TREE_URI, savedUri)
                     SharedPrefUtils.putPrefBoolean(SharedPrefKeys.PREF_KEY_WP_PERMISSION_GRANTED, true)
-                    
+
+                    // Verify it was saved correctly
+                    val verifyUri = SharedPrefUtils.getPrefString(SharedPrefKeys.PREF_KEY_WP_TREE_URI, "")
+                    Log.d(TAG, "handleDirectorySelection: Verified WhatsApp URI = $verifyUri")
+
                     Toast.makeText(requireContext(), "WhatsApp directory selected", Toast.LENGTH_SHORT).show()
                     binding.permissionLayoutHolder.visibility = View.GONE
                     getWhatsAppStatuses()
                 }
 
                 Constants.TYPE_WHATSAPP_BUSINESS -> {
-                    SharedPrefUtils.putPrefString(SharedPrefKeys.PREF_KEY_WP_BUSINESS_TREE_URI, uri.toString())
+                    Log.d(TAG, "handleDirectorySelection: Saving WhatsApp Business URI")
+                    val savedUri = uri.toString()
+                    Log.d(TAG, "handleDirectorySelection: Saved WhatsApp Business URI = $savedUri")
+
+                    SharedPrefUtils.putPrefString(SharedPrefKeys.PREF_KEY_WP_BUSINESS_TREE_URI, savedUri)
                     SharedPrefUtils.putPrefBoolean(SharedPrefKeys.PREF_KEY_WP_BUSINESS_PERMISSION_GRANTED, true)
+
+                    // Verify it was saved correctly
+                    val verifyUri = SharedPrefUtils.getPrefString(SharedPrefKeys.PREF_KEY_WP_BUSINESS_TREE_URI, "")
+                    Log.d(TAG, "handleDirectorySelection: Verified WhatsApp Business URI = $verifyUri")
 
                     Toast.makeText(requireContext(), "WhatsApp Business directory selected", Toast.LENGTH_SHORT).show()
                     binding.permissionLayoutHolder.visibility = View.GONE
                     getWhatsAppBusinessStatuses()
                 }
+
+                else -> {
+                    Log.e(TAG, "handleDirectorySelection: Unknown currentAppType = $currentAppType")
+                    Toast.makeText(requireContext(), "Error: Unknown app type", Toast.LENGTH_SHORT).show()
+                }
             }
 
+        } catch (e: SecurityException) {
+            Log.e(TAG, "handleDirectorySelection: SecurityException - ${e.message}")
+            Toast.makeText(
+                requireContext(),
+                "Permission denied: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
         } catch (e: Exception) {
-            Log.e(TAG, "Error handling directory selection: ${e.message}")
+            Log.e(TAG, "handleDirectorySelection: Exception - ${e.message}", e)
             Toast.makeText(requireContext(), "Failed to save directory: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }

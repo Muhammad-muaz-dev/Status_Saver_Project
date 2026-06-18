@@ -2,6 +2,7 @@ package com.example.statussaver.ui
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -48,11 +49,13 @@ class FragmentMedia : Fragment() {
                             val filteredList = unFilteredList.distinctBy { model ->
                                 model.fileName
                             }
+                            Log.d("statuses","the statuses fetching are $filteredList")
 
                             val list = ArrayList<MediaModel>()
                             filteredList.forEach { model ->
                                 list.add(model)
                             }
+                            Log.d("statuses","the statuses fetching are ${list.size}")
                             adapter = MediaAdapter(list, requireActivity())
                             mediaRecyclerView.adapter = adapter
                             if (list.size == 0) {
@@ -89,11 +92,13 @@ class FragmentMedia : Fragment() {
                             val filteredList = unFilteredList.distinctBy { model ->
                                 model.fileName
                             }
+                            Log.d("statuses business","the statuses fetching are $filteredList")
 
                             val list = ArrayList<MediaModel>()
                             filteredList.forEach { model ->
                                 list.add(model)
                             }
+                            Log.d("statuses business","the statuses fetching are ${list.size}")
                             adapter = MediaAdapter(list, requireActivity())
                             mediaRecyclerView.adapter = adapter
                             if (list.size == 0) {
