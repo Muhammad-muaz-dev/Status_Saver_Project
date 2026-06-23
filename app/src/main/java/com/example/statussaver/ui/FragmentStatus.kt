@@ -53,7 +53,11 @@ class FragmentStatus : Fragment() {
         super.onCreate(savedInstanceState)
         arguments?.let {
             type = it.getString(Constants.FRAGMENT_TYPE_KEY, "")
+        } ?: run {
+            type = Constants.TYPE_WHATSAPP_MAIN
         }
+        // Sync currentAppType with the passed type to ensure the flow is consistent
+        currentAppType = type
     }
 
     override fun onCreateView(
@@ -74,18 +78,31 @@ class FragmentStatus : Fragment() {
     }
 
     private fun setupUI() {
+        Log.d(TAG, "setupUI: Initializing flow for type: $type")
+
+        if (!isAppInstalled(type)) {
+            val appName = if (type == Constants.TYPE_WHATSAPP_MAIN) "WhatsApp" else "WhatsApp Business"
+            Toast.makeText(requireContext(), "$appName is not installed", Toast.LENGTH_LONG).show()
+            binding.permissionLayoutHolder.visibility = View.VISIBLE
+            binding.permissionLayout.btnPermission.visibility = View.GONE
+            binding.permissionLayout.textView.text = "$appName is not installed on this device."
+            return
+        }
+
         binding.swipeRefreshLayout.setOnRefreshListener {
-            when (type) {
-                Constants.TYPE_WHATSAPP_MAIN -> refreshWhatsAppStatuses()
-                Constants.TYPE_WHATSAPP_BUSINESS -> refreshWhatsAppBusinessStatuses()
-                else -> Log.e(TAG, "Unknown fragment type: $type")
+            if (type == Constants.TYPE_WHATSAPP_MAIN) {
+                refreshWhatsAppStatuses()
+            } else if (type == Constants.TYPE_WHATSAPP_BUSINESS) {
+                refreshWhatsAppBusinessStatuses()
             }
         }
 
-        when (type) {
-            Constants.TYPE_WHATSAPP_MAIN -> setupWhatsAppUI()
-            Constants.TYPE_WHATSAPP_BUSINESS -> setupWhatsAppBusinessUI()
-            else -> Log.e(TAG, "Unknown fragment type: $type")
+        if (type == Constants.TYPE_WHATSAPP_MAIN) {
+            setupWhatsAppUI()
+        } else if (type == Constants.TYPE_WHATSAPP_BUSINESS) {
+            setupWhatsAppBusinessUI()
+        } else {
+            Log.e(TAG, "setupUI: Unknown flow type: $type")
         }
     }
 
@@ -243,29 +260,33 @@ class FragmentStatus : Fragment() {
             tab.text = viewPagerTitles.getOrNull(pos) ?: "Unknown"
         }.attach()
     }
-
     private fun getWhatsAppStatuses() {
         binding.permissionLayoutHolder.visibility = View.GONE
         viewModel.getWhatsAppStatuses()
     }
 
+    private fun isAppInstalled(packageName: String): Boolean {
+        return try {
+            requireActivity().packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
     private fun getWhatsAppBusinessStatuses() {
         binding.permissionLayoutHolder.visibility = View.GONE
         viewModel.getWhatsAppBusinessStatuses()
     }
-
     private fun refreshWhatsAppStatuses() {
         binding.swipeRefreshLayout.isRefreshing = true
         getWhatsAppStatuses()
         binding.swipeRefreshLayout.isRefreshing = false
     }
-
     private fun refreshWhatsAppBusinessStatuses() {
         binding.swipeRefreshLayout.isRefreshing = true
         getWhatsAppBusinessStatuses()
         binding.swipeRefreshLayout.isRefreshing = false
     }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
